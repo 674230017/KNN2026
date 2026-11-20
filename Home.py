@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 st.header("โปรเจคการจำแนกข้อมูลหัวใจ")
-#st.image("./img/My1.jpg")
+#st.image("./img/Thanasak.jpg")
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -18,7 +18,7 @@ with col2:
 
 with col3:
    st.header("Setosa")
-   st.image("./img/heart3.jpg")
+   st.image("./img/My1.jpg")
 
 html_7 = """
 <div style="background-color:#EC7063;padding:15px;border-radius:15px 15px 15px 15px;border-style:'solid';border-color:black">
