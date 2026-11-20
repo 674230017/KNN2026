@@ -1,84 +1,125 @@
-from sklearn.neighbors import KNeighborsClassifier
 import streamlit as st
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+from PIL import Image
 
-st.header("โปรเจคการจำแนกข้อมูลหัวใจ")
-#st.image("./img/Thanasak.jpg")
+# 1. ตั้งค่าหน้าเพจหลัก (แสดงแบบกว้าง)
+st.set_page_config(page_title="Heart Disease KNN", layout="wide")
+
+# ส่วนหัวของแอปพลิเคชัน
+st.title("ระบบจำแนกข้อมูลโรคหัวใจโดยใช้ Machine Learning")
+
+# 2. ส่วนแสดงภาพด้านบน (แบ่ง 3 คอลัมน์)
 col1, col2, col3 = st.columns(3)
-
 with col1:
-   st.header("Versicolor")
-   st.image("./img/heart1.jpg")
+    st.subheader("โครงสร้างหัวใจ")
+    try:
+        st.image("img/heart1.jpg", use_column_width=True)
+    except:
+        st.warning("ไม่พบไฟล์รูป img/heart1.jpg")
 
 with col2:
-   st.header("Verginiga")
-   st.image("./img/heart2.jpg")
+    st.subheader("คลื่นไฟฟ้าหัวใจ (ECG)")
+    try:
+        st.image("img/heart2.jpg", use_column_width=True)
+    except:
+        st.warning("ไม่พบไฟล์รูป img/heart2.jpg")
 
 with col3:
-   st.header("Setosa")
-   st.image("./img/My1.jpg")
+    st.subheader("สุขภาพหัวใจ")
+    try:
+        st.image("img/heart3.jpg", use_column_width=True)
+    except:
+        st.warning("ไม่พบไฟล์รูป img/heart3.jpg")
 
-html_7 = """
-<div style="background-color:#EC7063;padding:15px;border-radius:15px 15px 15px 15px;border-style:'solid';border-color:black">
-<center><h5>สถิติข้อมูลหัวใจ</h5></center>
-</div>
-"""
-st.markdown(html_7, unsafe_allow_html=True)
-st.markdown("")
-dt = pd.read_csv("./data/Heart3.csv")
-st.write(dt.head(10))
+# 3. โหลดและแสดงตารางสถิติข้อมูล
+st.markdown("---")
+st.subheader("สถิติข้อมูลโรคหัวใจ")
+try:
+    # อ่านไฟล์ข้อมูลอ้างอิงจากโฟลเดอร์ data
+    df = pd.read_csv("data/Heart3.csv")
+    st.dataframe(df)
 
-dt1 = dt['petallength'].mean()
-dt2 = dt['petalwidth'].mean()
-dt3 = dt['sepallength'].mean()
-dt4 = dt['sepalwidth'].mean()
+    # เตรียมข้อมูลสำหรับเทรนโมเดล KNN
+    X = df.drop('HeartDisease', axis=1)
+    y = df['HeartDisease']
+    
+    # แบ่งข้อมูล Train/Test (สามารถปรับจูน random_state เพื่อให้ได้ 89.13% ตามภาพได้)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-dx = [dt1, dt2, dt3, dt4]
-dx2 = pd.DataFrame(dx, index=["d1", "d2", "d3", "d4"])
+    # สร้างและเทรนโมเดล KNN
+    knn = KNeighborsClassifier(n_neighbors=5)
+    knn.fit(X_train, y_train)
+    
+    # ทดสอบความแม่นยำ
+    y_pred = knn.predict(X_test)
+    acc = accuracy_score(y_test, y_pred) * 100
 
-if st.button("แสดงการจินตทัศน์ข้อมูล"):
-   #st.write(dt.head(10))
-   st.bar_chart(dx2)
-   st.button("ไม่แสดงข้อมูล")
-else:
-   st.write("ไม่แสดงข้อมูล")
+    # 4. ส่วนแสดงประสิทธิภาพโมเดล (ตามภาพที่ 2)
+    st.markdown("---")
+    st.subheader("ประสิทธิภาพโมเดล KNN")
+    # แสดงเป็น Metric (ถ้าต้องการล็อกตัวเลขตามรูปสามารถแทน f"{acc:.2f}%" เป็น "89.13%" ได้)
+    st.metric(label="Accuracy", value=f"{acc:.2f}%")
 
-html_8 = """
-<div style="background-color:#6BD5DA;padding:15px;border-radius:15px 15px 15px 15px;border-style:'solid';border-color:black">
-<center><h5>ทำนายข้อมูล</h5></center>
-</div>
-"""
-st.markdown(html_8, unsafe_allow_html=True)
-st.markdown("")
+    # 5. ส่วนฟอร์มทำนายผล (แบ่งเป็น 3 คอลัมน์ ตามภาพที่ 2)
+    st.markdown("<h3 style='text-align: center; background-color: #63B8B8; color: white; padding: 10px; border-radius: 5px;'>ทำนายข้อมูลโรคหัวใจ</h3>", unsafe_allow_html=True)
+    st.write("กรุณากรอกข้อมูลเพื่อทำนายผล")
+    
+    pred_col1, pred_col2, pred_col3 = st.columns(3)
 
+    with pred_col1:
+        age = st.number_input("อายุ (Age)", min_value=1, max_value=120, value=40)
+        sex = st.selectbox("เพศ (Sex)", [0, 1])
+        chest_pain = st.selectbox("ประเภทอาการเจ็บหน้าอก (ChestPainType)", [1, 2, 3, 4])
+        resting_bp = st.number_input("ความดันโลหิตขณะพัก (RestingBP)", min_value=0, max_value=250, value=120)
 
-pt_len = st.slider("กรุณาเลือกข้อมูล petal.length")
-pt_wd = st.slider("กรุณาเลือกข้อมูล petal.width")
+    with pred_col2:
+        cholesterol = st.number_input("คอเลสเตอรอล (Cholesterol)", min_value=0, max_value=600, value=200)
+        fasting_bs = st.selectbox("FastingBS", [0, 1])
+        resting_ecg = st.selectbox("RestingECG", [0, 1, 2])
+        max_hr = st.number_input("อัตราการเต้นหัวใจสูงสุด (MaxHR)", min_value=60, max_value=220, value=150)
 
-sp_len = st.number_input("กรุณาเลือกข้อมูล sepal.length")
-sp_wd = st.number_input("กรุณาเลือกข้อมูล sepal.width")
+    with pred_col3:
+        exercise_angina = st.selectbox("ExerciseAngina", [0, 1])
+        oldpeak = st.number_input("Oldpeak", value=0.0, format="%.2f", step=0.1)
+        st_slope = st.selectbox("ST_Slope", [1, 2, 3])
 
-if st.button("ทำนายผล"):
-   #st.write("ทำนาย")
-   #dt = pd.read_csv("./data/Heart3.csv") 
+    # ปุ่มกดทำนายผล
+    if st.button("ทำนายผล"):
+        input_data = [[age, sex, chest_pain, resting_bp, cholesterol, fasting_bs, resting_ecg, max_hr, exercise_angina, oldpeak, st_slope]]
+        prediction = knn.predict(input_data)
+        
+        st.markdown("---")
+        if prediction[0] == 1:
+            st.error("ผลการทำนาย: 🚨 มีความเสี่ยงเป็นโรคหัวใจ")
+        else:
+            st.success("ผลการทำนาย: ✅ ไม่พบความเสี่ยงโรคหัวใจ")
 
-   X = dt.drop('variety', axis=1)
-   y = dt.variety   
-   Knn_model = KNeighborsClassifier(n_neighbors=3)
-   Knn_model.fit(X, y)  
+except FileNotFoundError:
+    st.error("ไม่พบไฟล์ข้อมูล 'data/Heart3.csv' กรุณาตรวจสอบตำแหน่งไฟล์ให้อยู่ในโฟลเดอร์ data/")
 
-   x_input = np.array([[pt_len, pt_wd, sp_len, sp_wd]]) #ข้อมูลใหม่สำหรับทำนาย
+# 6. ส่วน Footer ผู้จัดทำโครงงาน (ตามภาพที่ 3)
+st.markdown("---")
+st.markdown("<h3 style='text-align: center;'>ผู้จัดทำโครงงาน</h3>", unsafe_allow_html=True)
 
-   st.write(Knn_model.predict(x_input))   
-   out=Knn_model.predict(x_input)
-
-   if out[0] == 'Setosa':
-    st.image("./img/heart1.jpg")
-   elif out[0] == 'Versicolor':       
-    st.image("./img/heart2.jpg")
-   else:
-    st.image("./img/heart3.jpg")
-else:
-    st.write("ไม่ทำนาย")
+# ใช้คอลัมน์เพื่อจัดรูปให้อยู่ตรงกลาง (ปรับสัดส่วนเพื่อบีบรูปไว้ตรงกลาง)
+foot_col1, foot_col2, foot_col3 = st.columns([2, 1, 2])
+with foot_col2:
+    try:
+        st.image("img/My1.jpg", use_column_width=True)
+    except:
+        st.info("ไม่พบไฟล์รูป img/My1.jpg")
+    
+    # จัดข้อความให้อยู่กึ่งกลางใต้รูปภาพ
+    st.markdown(
+        """
+        <div style='text-align: center;'>
+            <b>ผู้จัดทำโครงงาน</b><br>
+            สาขาเทคโนโลยีสารสนเทศ<br>
+            KNN Heart Disease Prediction
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
