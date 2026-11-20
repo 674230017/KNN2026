@@ -6,107 +6,119 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# 1. ตั้งค่าหน้าเพจหลัก (แสดงแบบกว้าง)
+# 1. ตั้งค่าหน้าเพจหลัก
 st.set_page_config(page_title="Heart Disease KNN", layout="wide")
 
-# ส่วนหัวของแอปพลิเคชัน
-st.title("ระบบจำแนกข้อมูลโรคหัวใจโดยใช้ Machine Learning")
+st.write("ระบบจำแนกข้อมูลโรคหัวใจโดยใช้ Machine Learning")
 
 # 2. ส่วนแสดงภาพด้านบน (แบ่ง 3 คอลัมน์)
 col1, col2, col3 = st.columns(3)
 with col1:
     st.subheader("โครงสร้างหัวใจ")
     try:
-        st.image("img/heart1.jpg", use_column_width=True)
+        st.image("img/heart1.jpg", use_container_width=True)
     except:
         st.warning("ไม่พบไฟล์รูป img/heart1.jpg")
 
 with col2:
     st.subheader("คลื่นไฟฟ้าหัวใจ (ECG)")
     try:
-        st.image("img/heart2.jpg", use_column_width=True)
+        st.image("img/heart2.jpg", use_container_width=True)
     except:
         st.warning("ไม่พบไฟล์รูป img/heart2.jpg")
 
 with col3:
     st.subheader("สุขภาพหัวใจ")
     try:
-        st.image("img/heart3.jpg", use_column_width=True)
+        st.image("img/heart3.jpg", use_container_width=True)
     except:
         st.warning("ไม่พบไฟล์รูป img/heart3.jpg")
 
 # 3. โหลดและแสดงตารางสถิติข้อมูล
 st.markdown("---")
 st.subheader("สถิติข้อมูลโรคหัวใจ")
+
 try:
-    # อ่านไฟล์ข้อมูลอ้างอิงจากโฟลเดอร์ data
     df = pd.read_csv("data/Heart3.csv")
-    st.dataframe(df)
-    
+    st.dataframe(df, height=250)
+
+    # แถบสีแดงใต้ตารางตามแบบในรูป
+    st.markdown(
+        """
+        <div style="background-color:#EC7063; padding:10px; border-radius:10px; text-align:center; color:black; font-weight:bold;">
+            สถิติข้อมูลโรคหัวใจ
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.write("")
+
     # ---------------------------------------------------------
-    # เพิ่มส่วน: การแสดงผลกราฟ (Data Visualization)
+    # ส่วนกราฟ: ย่อขนาดและวางคู่กัน 2 คอลัมน์ (วงกลม + แท่ง)
     # ---------------------------------------------------------
-    st.markdown("---")
-    st.subheader("กราฟวิเคราะห์ข้อมูลเบื้องต้น")
-    
-    # ใช้ Tab เพื่อให้กราฟดูเป็นระเบียบ ไม่กินพื้นที่หน้าเว็บ
-    tab1, tab2, tab3 = st.tabs(["สัดส่วนการเป็นโรคหัวใจ", "อายุ vs โรคหัวใจ", "คอเลสเตอรอล vs โรคหัวใจ"])
-    
-    with tab1:
-        st.markdown("**สัดส่วนของผู้ป่วยและผู้ที่ไม่เป็นโรคหัวใจในชุดข้อมูล**")
-        fig1, ax1 = plt.subplots(figsize=(6, 4))
-        sns.countplot(data=df, x='HeartDisease', palette='Set2', ax=ax1)
-        ax1.set_xticklabels(['ปกติ (0)', 'มีความเสี่ยง (1)'])
-        ax1.set_xlabel("สถานะโรคหัวใจ")
-        ax1.set_ylabel("จำนวนคน")
+    chart_col1, chart_col2 = st.columns(2)
+
+    with chart_col1:
+        st.markdown("**สัดส่วนผู้มีความเสี่ยงโรคหัวใจ (Pie Chart)**")
+        fig1, ax1 = plt.subplots(figsize=(4.5, 3.2))
+        counts = df['HeartDisease'].value_counts().sort_index()
+        ax1.pie(
+            counts,
+            labels=['Normal (0)', 'Heart Disease (1)'],
+            autopct='%1.1f%%',
+            startangle=90,
+            colors=['#66B2FF', '#FF9999']
+        )
+        ax1.axis('equal')
+        plt.tight_layout()
         st.pyplot(fig1)
-        
-    with tab2:
-        st.markdown("**การกระจายตัวของอายุ เปรียบเทียบกับการเป็นโรคหัวใจ**")
-        fig2, ax2 = plt.subplots(figsize=(8, 4))
-        sns.histplot(data=df, x='Age', hue='HeartDisease', multiple='stack', palette='coolwarm', ax=ax2, bins=15)
-        ax2.set_xlabel("อายุ (ปี)")
-        ax2.set_ylabel("จำนวนคน")
+
+    with chart_col2:
+        st.markdown("**จำนวนข้อมูลแยกตามอาการเจ็บหน้าอก (Bar Chart)**")
+        fig2, ax2 = plt.subplots(figsize=(4.5, 3.2))
+        sns.countplot(
+            data=df,
+            x='ChestPainType',
+            hue='HeartDisease',
+            palette=['#66B2FF', '#FF9999'],
+            ax=ax2
+        )
+        ax2.set_xlabel("ChestPainType (1-4)")
+        ax2.set_ylabel("Count")
+        ax2.legend(title="HeartDisease", labels=["Normal (0)", "Disease (1)"], fontsize=8)
+        plt.tight_layout()
         st.pyplot(fig2)
-        
-    with tab3:
-        st.markdown("**ความสัมพันธ์ระหว่างคอเลสเตอรอลและการเป็นโรคหัวใจ**")
-        fig3, ax3 = plt.subplots(figsize=(8, 4))
-        sns.boxplot(data=df, x='HeartDisease', y='Cholesterol', palette='pastel', ax=ax3)
-        ax3.set_xticklabels(['ปกติ (0)', 'มีความเสี่ยง (1)'])
-        ax3.set_xlabel("สถานะโรคหัวใจ")
-        ax3.set_ylabel("คอเลสเตอรอล")
-        st.pyplot(fig3)
     # ---------------------------------------------------------
 
-    # เตรียมข้อมูลสำหรับเทรนโมเดล KNN
+    # 4. เตรียมข้อมูลและเทรนโมเดล KNN
     X = df.drop('HeartDisease', axis=1)
     y = df['HeartDisease']
-    
-    # แบ่งข้อมูล Train/Test
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # สร้างและเทรนโมเดล KNN
     knn = KNeighborsClassifier(n_neighbors=5)
     knn.fit(X_train, y_train)
-    
-    # ทดสอบความแม่นยำ
     y_pred = knn.predict(X_test)
     acc = accuracy_score(y_test, y_pred) * 100
 
-    # 4. ส่วนแสดงประสิทธิภาพโมเดล
     st.markdown("---")
     st.subheader("ประสิทธิภาพโมเดล KNN")
     st.metric(label="Accuracy", value=f"{acc:.2f}%")
 
-    # 5. ส่วนฟอร์มทำนายผล
-    st.markdown("<h3 style='text-align: center; background-color: #63B8B8; color: white; padding: 10px; border-radius: 5px;'>ทำนายข้อมูลโรคหัวใจ</h3>", unsafe_allow_html=True)
+    # 5. ส่วนฟอร์มทำนายผล (แถบสีฟ้าอมเขียวตามแบบ)
+    st.markdown(
+        """
+        <div style="background-color:#6BD5DA; padding:12px; border-radius:10px; text-align:center; color:black; font-weight:bold;">
+            ทำนายข้อมูลโรคหัวใจ
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     st.write("กรุณากรอกข้อมูลเพื่อทำนายผล")
-    
+
     pred_col1, pred_col2, pred_col3 = st.columns(3)
 
     with pred_col1:
-        age = st.number_input("อายุ (Age)", min_value=1, max_value=120, value=40)
+        age = st.slider("อายุ (Age)", min_value=1, max_value=100, value=22)
         sex = st.selectbox("เพศ (Sex)", [0, 1])
         chest_pain = st.selectbox("ประเภทอาการเจ็บหน้าอก (ChestPainType)", [1, 2, 3, 4])
         resting_bp = st.number_input("ความดันโลหิตขณะพัก (RestingBP)", min_value=0, max_value=250, value=120)
@@ -114,24 +126,23 @@ try:
     with pred_col2:
         cholesterol = st.number_input("คอเลสเตอรอล (Cholesterol)", min_value=0, max_value=600, value=200)
         fasting_bs = st.selectbox("FastingBS", [0, 1])
-        resting_ecg = st.selectbox("RestingECG", [0, 1, 2])
+        resting_ecg = st.selectbox("RestingECG", [1, 2, 3])
         max_hr = st.number_input("อัตราการเต้นหัวใจสูงสุด (MaxHR)", min_value=60, max_value=220, value=150)
 
     with pred_col3:
         exercise_angina = st.selectbox("ExerciseAngina", [0, 1])
-        oldpeak = st.number_input("Oldpeak", value=0.0, format="%.2f", step=0.1)
+        oldpeak = st.number_input("Oldpeak", value=0.00, format="%.2f", step=0.1)
         st_slope = st.selectbox("ST_Slope", [1, 2, 3])
 
-    # ปุ่มกดทำนายผล
     if st.button("ทำนายผล"):
         input_data = [[age, sex, chest_pain, resting_bp, cholesterol, fasting_bs, resting_ecg, max_hr, exercise_angina, oldpeak, st_slope]]
         prediction = knn.predict(input_data)
-        
+
         st.markdown("---")
         if prediction[0] == 1:
-            st.error("ผลการทำนาย: 🚨 มีความเสี่ยงเป็นโรคหัวใจ")
+            st.error("ผลการทำนาย: มีความเสี่ยงเป็นโรคหัวใจ")
         else:
-            st.success("ผลการทำนาย: ✅ ไม่พบความเสี่ยงโรคหัวใจ")
+            st.success("ผลการทำนาย: ไม่พบความเสี่ยงโรคหัวใจ")
 
 except FileNotFoundError:
     st.error("ไม่พบไฟล์ข้อมูล 'data/Heart3.csv' กรุณาตรวจสอบตำแหน่งไฟล์ให้อยู่ในโฟลเดอร์ data/")
@@ -143,10 +154,10 @@ st.markdown("<h3 style='text-align: center;'>ผู้จัดทำโคร�
 foot_col1, foot_col2, foot_col3 = st.columns([2, 1, 2])
 with foot_col2:
     try:
-        st.image("img/My1.jpg", use_column_width=True)
+        st.image("img/My1.jpg", use_container_width=True)
     except:
         st.info("ไม่พบไฟล์รูป img/My1.jpg")
-    
+
     st.markdown(
         """
         <div style='text-align: center;'>
@@ -154,6 +165,6 @@ with foot_col2:
             สาขาเทคโนโลยีสารสนเทศ<br>
             KNN Heart Disease Prediction
         </div>
-        """, 
+        """,
         unsafe_allow_html=True
     )
